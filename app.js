@@ -106,9 +106,9 @@
   }
 
   function art(id) {
-    if (!id) return "";
-    return `<img class="ex-svg" alt="" src="${id}.gif">`;
-  }
+  if (!id) return "";
+  return `<img class="ex-svg" alt="" src="${id}.gif">`;
+}
 
   function estimateMinutes(r) {
     if (!r.items.length) return 0;
