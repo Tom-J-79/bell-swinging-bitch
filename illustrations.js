@@ -1,410 +1,599 @@
-/* Bellwork motion figures — inline SVG + CSS animation per exercise */
+/* Bellwork figures — SVG joints (SMIL). Body parts and bells animate separately. */
 (() => {
   const KB = "#d06a2b";
   const INK = "#f3ead8";
   const MUTED = "#8a8f7a";
+  const ST = `stroke="${INK}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
 
-  function bell(x, y, s = 1, flip = false) {
-    const w = 14 * s, h = 12 * s, hw = 8 * s;
-    const rot = flip ? ` transform="rotate(180 ${x} ${y})"` : "";
-    return `<g class="kb"${rot}>
-      <path d="M${x - hw / 2} ${y - h * 0.55} C${x - hw / 2} ${y - h * 0.95} ${x + hw / 2} ${y - h * 0.95} ${x + hw / 2} ${y - h * 0.55}"
-        fill="none" stroke="${KB}" stroke-width="${1.6 * s}" />
-      <ellipse cx="${x}" cy="${y}" rx="${w / 2}" ry="${h / 2}" fill="${KB}" />
-      <ellipse cx="${x}" cy="${y - 1 * s}" rx="${w * 0.22}" ry="${h * 0.18}" fill="#f0b07a" opacity="0.35"/>
+  function rot(values, dur) {
+    dur = dur || "1.4s";
+    return `<animateTransform attributeName="transform" type="rotate" values="${values}" dur="${dur}" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.42 0 0.2 1; 0.42 0 0.2 1"/>`;
+  }
+
+  function slide(values, dur) {
+    dur = dur || "1.4s";
+    return `<animateTransform attributeName="transform" type="translate" values="${values}" dur="${dur}" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.42 0 0.2 1; 0.42 0 0.2 1"/>`;
+  }
+
+  function bell(s, flip) {
+    s = s || 1;
+    const w = 7.2 * s, h = 6 * s, hw = 4 * s;
+    const turn = flip ? ` transform="rotate(180)"` : "";
+    return `<g class="kb"${turn}>
+      <path d="M${-hw} ${-h * 0.65} C${-hw} ${-h * 1.12} ${hw} ${-h * 1.12} ${hw} ${-h * 0.65}" fill="none" stroke="${KB}" stroke-width="${1.45 * s}"/>
+      <ellipse cx="0" cy="0" rx="${w}" ry="${h}" fill="${KB}"/>
+      <ellipse cx="0" cy="${-0.7 * s}" rx="${w * 0.26}" ry="${h * 0.2}" fill="#f0b07a" opacity="0.32"/>
     </g>`;
   }
 
-  function floor() {
-    return `<path d="M12 88 H88" stroke="${MUTED}" stroke-width="1.2" opacity="0.45"/>`;
+  function ground() {
+    return `<path d="M12 90 H88" stroke="${MUTED}" stroke-width="1.2" opacity="0.4"/>`;
   }
 
-  function bar(y = 10) {
-    return `<path d="M22 ${y} H78" stroke="${MUTED}" stroke-width="2.2" stroke-linecap="round"/>`;
+  function wrap(inner) {
+    return `<svg class="ex-svg" viewBox="0 0 100 100" aria-hidden="true">${ground()}${inner}</svg>`;
   }
 
-  function head(x, y, r = 6) {
-    return `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${INK}" stroke-width="1.8"/>`;
-  }
+  /* Jointed standing person. Hip at 50,54. Each limb group rotates around its own joint. */
+  function person(p) {
+    p = Object.assign({
+      dur: "1.4s",
+      torso: "6; 2; 6",
+      hips: "0 0; 0 0; 0 0",
+      armL: "18; 14; 18",
+      armR: "-18; -14; -18",
+      foreL: "8; 6; 8",
+      foreR: "-8; -6; -8",
+      legL: "8; 4; 8",
+      legR: "-8; -4; -8",
+      shinL: "-6; -4; -6",
+      shinR: "6; 4; 6",
+      hold: "none",
+      wide: false,
+      kickR: false
+    }, p);
 
-  /* Generic stick athlete. Joints are explicit so CSS can animate groups. */
-  function athlete(p) {
-    const {
-      hx = 50, hy = 20,
-      sx = 50, sy = 32,
-      hipx = 50, hipy = 50,
-      lx1 = 42, ly1 = 68, lx2 = 38, ly2 = 86,
-      rx1 = 58, ry1 = 68, rx2 = 62, ry2 = 86,
-      lax = 38, lay = 44, lhx = 30, lhy = 56,
-      rax = 62, ray = 44, rhx = 70, rhy = 56,
-      extra = "",
-      bodyClass = "body"
-    } = p;
-    return `<g class="${bodyClass}">
-      ${head(hx, hy)}
-      <path class="spine" d="M${sx} ${sy} L${hipx} ${hipy}" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>
-      <path class="arm-l" d="M${sx} ${sy + 2} L${lax} ${lay} L${lhx} ${lhy}" stroke="${INK}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      <path class="arm-r" d="M${sx} ${sy + 2} L${rax} ${ray} L${rhx} ${rhy}" stroke="${INK}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      <path class="leg-l" d="M${hipx} ${hipy} L${lx1} ${ly1} L${lx2} ${ly2}" stroke="${INK}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      <path class="leg-r" d="M${hipx} ${hipy} L${rx1} ${ry1} L${rx2} ${ry2}" stroke="${INK}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      ${extra}
+    const d = p.dur;
+    let leftHand = "", rightHand = "", chestBell = "";
+    if (p.hold === "l" || p.hold === "both") leftHand = `<g transform="translate(0 1)">${bell(0.72)}</g>`;
+    if (p.hold === "r" || p.hold === "both") rightHand = `<g transform="translate(0 1)">${bell(0.72)}</g>`;
+    if (p.hold === "goblet") chestBell = `<g transform="translate(0 -17)">${bell(0.78)}</g>`;
+    if (p.hold === "rack") chestBell = `<g transform="translate(8 -21)">${bell(0.7)}</g>`;
+    if (p.hold === "racks") {
+      chestBell = `<g transform="translate(-8 -21)">${bell(0.66)}</g><g transform="translate(8 -21)">${bell(0.66)}</g>`;
+    }
+
+    const thighL = p.wide ? "-11 16" : "-7 17";
+    const thighR = p.wide ? "11 16" : "7 17";
+    const [tlx, tly] = thighL.split(" ");
+    const [trx, try_] = thighR.split(" ");
+
+    const rearR = p.kickR
+      ? `<g class="leg-r">${rot(p.legR, d)}<path d="M0 0 L14 6" ${ST}/>
+          <g transform="translate(14 6)"><g>${rot(p.shinR, d)}<path d="M0 0 L12 2" ${ST}/></g></g></g>`
+      : `<g class="leg-r">${rot(p.legR, d)}<path d="M0 0 L${trx} ${try_}" ${ST}/>
+          <g transform="translate(${trx} ${try_})"><g>${rot(p.shinR, d)}<path d="M0 0 L3 17" ${ST}/></g></g></g>`;
+
+    return `<g class="athlete" transform="translate(50 54)">
+      <g class="hips">${slide(p.hips, d)}
+        <g class="torso">${rot(p.torso, d)}
+          <path d="M0 0 L0 -26" ${ST}/>
+          <circle cx="0" cy="-34" r="6" fill="none" stroke="${INK}" stroke-width="1.85"/>
+          <g transform="translate(-3 -22)">
+            <g class="arm-l">${rot(p.armL, d)}
+              <path d="M0 0 L3 13" ${ST}/>
+              <g transform="translate(3 13)">
+                <g class="fore-l">${rot(p.foreL, d)}
+                  <path d="M0 0 L2 12" ${ST}/>
+                  <g transform="translate(2 12)">${leftHand}</g>
+                </g>
+              </g>
+            </g>
+          </g>
+          <g transform="translate(3 -22)">
+            <g class="arm-r">${rot(p.armR, d)}
+              <path d="M0 0 L-3 13" ${ST}/>
+              <g transform="translate(-3 13)">
+                <g class="fore-r">${rot(p.foreR, d)}
+                  <path d="M0 0 L-2 12" ${ST}/>
+                  <g transform="translate(-2 12)">${rightHand}</g>
+                </g>
+              </g>
+            </g>
+          </g>
+          ${chestBell}
+        </g>
+        <g transform="translate(-2 0)">
+          <g class="leg-l">${rot(p.legL, d)}
+            <path d="M0 0 L${tlx} ${tly}" ${ST}/>
+            <g transform="translate(${tlx} ${tly})">
+              <g class="shin-l">${rot(p.shinL, d)}<path d="M0 0 L-3 17" ${ST}/></g>
+            </g>
+          </g>
+        </g>
+        <g transform="translate(2 0)">${rearR}</g>
+      </g>
     </g>`;
   }
 
-  const stand = {
-    hx: 50, hy: 18, sx: 50, sy: 26, hipx: 50, hipy: 50,
-    lx1: 44, ly1: 68, lx2: 40, ly2: 86,
-    rx1: 56, ry1: 68, rx2: 60, ry2: 86,
-    lax: 40, lay: 40, lhx: 36, lhy: 54,
-    rax: 60, ray: 40, rhx: 64, rhy: 54
+  /* Bell that swings around the hip, not parented to the torso. */
+  function pendulum(dur, a0, a1, drop, scale) {
+    dur = dur || "1.4s";
+    drop = drop == null ? 27 : drop;
+    scale = scale || 0.95;
+    return `<g transform="translate(50 54)">
+      <g>${rot(`${a0}; ${a1}; ${a0}`, dur)}
+        <g transform="translate(0 ${drop})">${bell(scale)}</g>
+      </g>
+    </g>`;
+  }
+
+  function twoPendulum(dur, a0, a1) {
+    return `<g transform="translate(50 54)">
+      <g>${rot(`${a0}; ${a1}; ${a0}`, dur)}
+        <g transform="translate(-7 27)">${bell(0.78)}</g>
+        <g transform="translate(7 27)">${bell(0.78)}</g>
+      </g>
+    </g>`;
+  }
+
+  function floatBell(x0, y0, x1, y1, dur) {
+    dur = dur || "1.3s";
+    return `<g>${slide(`${x0} ${y0}; ${x1} ${y1}; ${x0} ${y0}`, dur)}${bell(0.82)}</g>`;
+  }
+
+  const swingBody = {
+    dur: "1.35s",
+    torso: "26; -6; 26",
+    hips: "3 1; 0 -1; 3 1",
+    armL: "32; -8; 32",
+    armR: "22; -16; 22",
+    foreL: "6; 2; 6",
+    foreR: "6; 2; 6",
+    legL: "12; 2; 12",
+    legR: "-12; -2; -12",
+    shinL: "-14; -4; -14",
+    shinR: "14; 4; 14",
+    hold: "none"
   };
 
-  function wrap(cls, inner) {
-    return `<svg class="ex-svg ${cls}" viewBox="0 0 100 100" aria-hidden="true">${floor()}${inner}</svg>`;
+  const squatBody = {
+    dur: "1.5s",
+    torso: "8; 3; 8",
+    hips: "0 8; 0 0; 0 8",
+    armL: "-38; -34; -38",
+    armR: "38; 34; 38",
+    foreL: "-18; -14; -18",
+    foreR: "18; 14; 18",
+    legL: "36; 6; 36",
+    legR: "-36; -6; -36",
+    shinL: "-46; -8; -46",
+    shinR: "46; 8; 46"
+  };
+
+  const hingeBody = {
+    dur: "1.65s",
+    torso: "34; 6; 34",
+    hips: "4 2; 0 0; 4 2",
+    armL: "8; 16; 8",
+    armR: "-8; -16; -8",
+    foreL: "4; 4; 4",
+    foreR: "-4; -4; -4",
+    legL: "16; 4; 16",
+    legR: "-16; -4; -16",
+    shinL: "-16; -4; -16",
+    shinR: "16; 4; 16",
+    hold: "both"
+  };
+
+  const lungeBody = {
+    dur: "1.55s",
+    torso: "6; 2; 6",
+    hips: "0 5; 0 1; 0 5",
+    armL: "-30; -26; -30",
+    armR: "30; 26; 30",
+    foreL: "-10; -8; -10",
+    foreR: "10; 8; 10",
+    legL: "28; 8; 28",
+    legR: "-22; -6; -22",
+    shinL: "-24; -8; -24",
+    shinR: "-20; -10; -20",
+    hold: "goblet"
+  };
+
+  const pressBody = {
+    dur: "1.4s",
+    torso: "3; -2; 3",
+    hips: "0 0; 0 0; 0 0",
+    armL: "14; 10; 14",
+    armR: "-40; -168; -40",
+    foreL: "8; 6; 8",
+    foreR: "-20; 5; -20",
+    legL: "4; 4; 4",
+    legR: "-4; -4; -4",
+    hold: "r"
+  };
+
+  const walkBody = {
+    dur: "0.7s",
+    torso: "-3; 3; -3",
+    hips: "0 0; 0 -2; 0 0",
+    armL: "22; -16; 22",
+    armR: "-22; 16; -22",
+    foreL: "8; 4; 8",
+    foreR: "-8; -4; -8",
+    legL: "16; -14; 16",
+    legR: "-14; 16; -14",
+    shinL: "-10; -18; -10",
+    shinR: "-18; -10; -18",
+    hold: "both"
+  };
+
+  function floorPerson(kind) {
+    const d = kind === "mountain" ? "0.5s" : "1.35s";
+    const arm = kind === "push" ? rot("8; 32; 8", d) : rot("4; 8; 4", d);
+    const torsoMove = kind === "push"
+      ? slide("0 0; 0 6; 0 0", d)
+      : kind === "mountain"
+        ? slide("0 0; 0 1; 0 0", d)
+        : slide("0 0; 0 1.5; 0 0", d);
+    const legL = kind === "mountain" ? rot("-8; -48; -8", d) : rot("2; 4; 2", d);
+    const legR = kind === "mountain" ? rot("-48; -8; -48", d) : rot("2; 4; 2", d);
+    return `<g transform="translate(50 48)">
+      <g>${torsoMove}
+        <path d="M-26 0 L22 0" ${ST}/>
+        <circle cx="-34" cy="-1" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+        <g transform="translate(-18 0)"><g>${arm}<path d="M0 0 L-1 22" ${ST}/></g></g>
+        <g transform="translate(6 0)"><g>${arm}<path d="M0 0 L2 10" ${ST}/></g></g>
+        <g transform="translate(14 0)"><g>${legL}<path d="M0 0 L10 22" ${ST}/></g></g>
+        <g transform="translate(20 0)"><g>${legR}<path d="M0 0 L12 20" ${ST}/></g></g>
+      </g>
+    </g>`;
+  }
+
+  function hangPerson(pull) {
+    const d = "1.5s";
+    const body = pull ? slide("0 10; 0 0; 0 10", d) : rot("-4; 4; -4", "2.2s");
+    return `<path d="M22 13 H78" stroke="${MUTED}" stroke-width="2.2" stroke-linecap="round"/>
+      <g transform="translate(50 14)">
+        <g>${body}
+          <path d="M-16 0 L0 20 L16 0" ${ST}/>
+          <path d="M0 20 L0 34" ${ST}/>
+          <circle cx="0" cy="12" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+          <g transform="translate(-3 34)"><g>${rot(pull ? "8; 12; 8" : "6; -6; 6", d)}<path d="M0 0 L-5 16" ${ST}/></g></g>
+          <g transform="translate(3 34)"><g>${rot(pull ? "-8; -12; -8" : "-6; 6; -6", d)}<path d="M0 0 L5 16" ${ST}/></g></g>
+        </g>
+      </g>`;
   }
 
   const poses = {
-    "kb-swing": () => wrap("art-swing",
-      athlete({ ...stand, hy: 22, sy: 30, hipx: 56, hipy: 52, lx2: 36, rx2: 64, lax: 44, lay: 48, lhx: 40, lhy: 62, rax: 48, ray: 48, rhx: 42, rhy: 62 })
-      + `<g class="prop swing-bell">${bell(40, 70, 1)}</g>`
-    ),
-    "kb-2h-swing": () => wrap("art-swing",
-      athlete({ ...stand, hipx: 56, hipy: 52, lax: 46, lay: 50, lhx: 42, lhy: 64, rax: 50, ray: 50, rhx: 44, rhy: 64 })
-      + `<g class="prop swing-bell">${bell(42, 72, 1.05)}</g>`
-    ),
-    "kb-1h-swing": () => wrap("art-swing",
-      athlete({ ...stand, hipx: 55, hipy: 52, lax: 36, lay: 38, lhx: 28, lhy: 32, rax: 50, ray: 50, rhx: 44, rhy: 66 })
-      + `<g class="prop swing-bell">${bell(43, 72, 1)}</g>`
-    ),
-    "kb-double-swing": () => wrap("art-swing",
-      athlete({ ...stand, hipx: 56, hipy: 52, lax: 40, lay: 50, lhx: 34, lhy: 66, rax: 54, ray: 50, rhx: 48, rhy: 66 })
-      + `<g class="prop swing-bell">${bell(34, 72, 0.85)}${bell(48, 72, 0.85)}</g>`
-    ),
-    "kb-deadlift": () => wrap("art-hinge",
-      athlete({ hx: 58, hy: 28, sx: 56, sy: 36, hipx: 54, hipy: 52, lx2: 36, rx2: 66, lax: 50, lay: 48, lhx: 46, lhy: 64, rax: 52, ray: 48, rhx: 48, rhy: 64 })
-      + `<g class="prop">${bell(48, 78, 1)}</g>`
-    ),
-    "kb-sumo-dl": () => wrap("art-hinge",
-      athlete({ hx: 50, hy: 26, sx: 50, sy: 34, hipx: 50, hipy: 50, lx1: 36, ly1: 64, lx2: 26, ly2: 86, rx1: 64, ry1: 64, rx2: 74, ry2: 86, lax: 46, lay: 48, lhx: 44, lhy: 64, rax: 54, ray: 48, rhx: 56, rhy: 64 })
-      + `<g class="prop">${bell(50, 76, 1)}</g>`
-    ),
-    "kb-single-leg-rdl": () => wrap("art-rdl",
-      athlete({ hx: 60, hy: 24, sx: 56, sy: 32, hipx: 50, hipy: 48, lx1: 46, ly1: 66, lx2: 42, ly2: 86, rx1: 62, ry1: 56, rx2: 78, ry2: 48, lax: 48, lay: 44, lhx: 44, lhy: 60, rax: 44, ray: 38, rhx: 36, rhy: 48 })
-      + `<g class="prop">${bell(42, 64, 0.9)}</g>`
-    ),
-    "kb-good-morning": () => wrap("art-hinge",
-      athlete({ hx: 64, hy: 26, sx: 58, sy: 34, hipx: 50, hipy: 50, lx2: 38, rx2: 62, lax: 54, lay: 30, lhx: 62, lhy: 20, rax: 56, ray: 30, rhx: 66, rhy: 20 })
-      + `<g class="prop">${bell(62, 16, 0.75)}</g>`
-    ),
-    "kb-goblet-squat": () => wrap("art-squat",
-      athlete({ hx: 50, hy: 26, sx: 50, sy: 34, hipx: 50, hipy: 58, lx1: 40, ly1: 70, lx2: 32, ly2: 86, rx1: 60, ry1: 70, rx2: 68, ry2: 86, lax: 46, lay: 42, lhx: 46, lhy: 50, rax: 54, ray: 42, rhx: 54, rhy: 50 })
-      + `<g class="prop">${bell(50, 46, 0.85)}</g>`
-    ),
-    "kb-front-squat": () => wrap("art-squat",
-      athlete({ hx: 50, hy: 24, sx: 50, sy: 32, hipx: 50, hipy: 56, lx1: 40, ly1: 70, lx2: 34, ly2: 86, rx1: 60, ry1: 70, rx2: 66, ry2: 86, lax: 42, lay: 36, lhx: 40, lhy: 30, rax: 58, ray: 36, rhx: 56, rhy: 30 })
-      + `<g class="prop">${bell(42, 28, 0.72)}</g>`
-    ),
-    "kb-double-front-squat": () => wrap("art-squat",
-      athlete({ hx: 50, hy: 24, sx: 50, sy: 32, hipx: 50, hipy: 56, lx1: 40, ly1: 70, lx2: 34, ly2: 86, rx1: 60, ry1: 70, rx2: 66, ry2: 86, lax: 40, lay: 36, lhx: 38, lhy: 30, rax: 60, ray: 36, rhx: 62, rhy: 30 })
-      + `<g class="prop">${bell(36, 28, 0.68)}${bell(64, 28, 0.68)}</g>`
-    ),
-    "kb-rack-squat": () => wrap("art-squat",
-      athlete({ hx: 50, hy: 24, sx: 50, sy: 32, hipx: 50, hipy: 56, lx1: 40, ly1: 70, lx2: 34, ly2: 86, rx1: 60, ry1: 70, rx2: 66, ry2: 86, lax: 40, lay: 36, lhx: 38, lhy: 28, rax: 60, ray: 42, rhx: 64, rhy: 54 })
-      + `<g class="prop">${bell(36, 26, 0.72)}</g>`
-    ),
-    "kb-lunge": () => wrap("art-lunge",
-      athlete({ hx: 48, hy: 20, sx: 48, sy: 28, hipx: 48, hipy: 48, lx1: 40, ly1: 66, lx2: 30, ly2: 86, rx1: 58, ry1: 64, rx2: 70, ry2: 78, lax: 44, lay: 40, lhx: 42, lhy: 50, rax: 52, ray: 40, rhx: 54, rhy: 50 })
-      + `<g class="prop">${bell(48, 48, 0.8)}</g>`
-    ),
-    "kb-forward-lunge": () => wrap("art-lunge",
-      athlete({ hx: 52, hy: 20, sx: 52, sy: 28, hipx: 50, hipy: 48, lx1: 58, ly1: 64, lx2: 70, ly2: 86, rx1: 42, ry1: 66, rx2: 34, ry2: 80, lax: 48, lay: 40, lhx: 46, lhy: 52, rax: 56, ray: 40, rhx: 58, rhy: 52 })
-      + `<g class="prop">${bell(40, 58, 0.75)}</g>`
-    ),
-    "kb-walking-lunge": () => wrap("art-walk art-lunge",
-      athlete({ hx: 50, hy: 18, sx: 50, sy: 26, hipx: 50, hipy: 48, lx1: 42, ly1: 64, lx2: 34, ly2: 86, rx1: 62, ry1: 62, rx2: 72, ry2: 78, lax: 38, lay: 40, lhx: 32, lhy: 50, rax: 60, ray: 38, rhx: 68, rhy: 48 })
-      + `<g class="prop">${bell(32, 54, 0.7)}${bell(70, 50, 0.7)}</g>`
-    ),
-    "kb-cossack": () => wrap("art-cossack",
-      athlete({ hx: 42, hy: 28, sx: 42, sy: 36, hipx: 44, hipy: 56, lx1: 36, ly1: 70, lx2: 30, ly2: 86, rx1: 62, ry1: 62, rx2: 80, ry2: 78, lax: 40, lay: 46, lhx: 40, lhy: 56, rax: 50, ray: 46, rhx: 52, rhy: 56 })
-      + `<g class="prop">${bell(42, 52, 0.75)}</g>`
-    ),
-    "kb-press": () => wrap("art-press",
-      athlete({ ...stand, lax: 40, lay: 36, lhx: 38, lhy: 28, rax: 62, ray: 34, rhx: 64, rhy: 18 })
-      + `<g class="prop press-bell">${bell(64, 12, 0.75)}</g>`
-    ),
-    "kb-push-press": () => wrap("art-pushpress",
-      athlete({ hx: 50, hy: 22, sx: 50, sy: 30, hipx: 50, hipy: 54, lx1: 44, ly1: 68, lx2: 40, ly2: 86, rx1: 56, ry1: 68, rx2: 60, ry2: 86, lax: 40, lay: 36, lhx: 38, lhy: 28, rax: 62, ray: 30, rhx: 64, rhy: 16 })
-      + `<g class="prop press-bell">${bell(64, 10, 0.75)}</g>`
-    ),
-    "kb-double-press": () => wrap("art-press",
-      athlete({ ...stand, lax: 38, lay: 30, lhx: 36, lhy: 16, rax: 62, ray: 30, rhx: 64, rhy: 16 })
-      + `<g class="prop press-bell">${bell(36, 10, 0.68)}${bell(64, 10, 0.68)}</g>`
-    ),
-    "kb-bottoms-up-press": () => wrap("art-press",
-      athlete({ ...stand, rax: 62, ray: 30, rhx: 64, rhy: 16, lax: 40, lay: 40, lhx: 36, lhy: 52 })
-      + `<g class="prop press-bell">${bell(64, 10, 0.7, true)}</g>`
-    ),
-    "kb-floor-press": () => wrap("art-floor",
-      `<g class="body">
-        ${head(22, 40)}
-        <path d="M28 42 L62 44" stroke="${INK}" stroke-width="2.2"/>
-        <path d="M40 44 L38 58 L70 60" stroke="${INK}" stroke-width="1.8" fill="none"/>
-        <path d="M40 44 L42 58 L72 62" stroke="${INK}" stroke-width="1.8" fill="none"/>
-        <path d="M58 44 L70 28" stroke="${INK}" stroke-width="1.8"/>
-      </g>${bell(72, 22, 0.8)}`
-    ),
-    "kb-tgu": () => wrap("art-tgu",
-      `<g class="body">
-        ${head(30, 30)}
-        <path d="M34 36 L50 50 L46 70 L38 86" stroke="${INK}" stroke-width="2" fill="none" stroke-linejoin="round"/>
-        <path d="M50 50 L66 62 L74 86" stroke="${INK}" stroke-width="2" fill="none"/>
-        <path d="M46 40 L58 24" stroke="${INK}" stroke-width="1.8"/>
-        <path d="M40 42 L28 54" stroke="${INK}" stroke-width="1.8"/>
-      </g>${bell(60, 16, 0.75)}`
-    ),
-    "kb-windmill": () => wrap("art-windmill",
-      athlete({ hx: 62, hy: 16, sx: 58, sy: 24, hipx: 50, hipy: 50, lx1: 42, ly1: 66, lx2: 34, ly2: 86, rx1: 62, ry1: 66, rx2: 70, ry2: 86, lax: 44, lay: 48, lhx: 40, lhy: 68, rax: 62, ray: 20, rhx: 64, rhy: 10 })
-      + `<g class="prop">${bell(64, 6, 0.7)}</g>`
-    ),
-    "kb-clean": () => wrap("art-clean",
-      athlete({ ...stand, lax: 40, lay: 36, lhx: 38, lhy: 28, rax: 60, ray: 42, rhx: 64, rhy: 54 })
-      + `<g class="prop clean-bell">${bell(38, 24, 0.75)}</g>`
-    ),
-    "kb-double-clean": () => wrap("art-clean",
-      athlete({ ...stand, lax: 40, lay: 34, lhx: 38, lhy: 26, rax: 60, ray: 34, rhx: 62, rhy: 26 })
-      + `<g class="prop clean-bell">${bell(36, 22, 0.68)}${bell(64, 22, 0.68)}</g>`
-    ),
-    "kb-snatch": () => wrap("art-snatch",
-      athlete({ ...stand, rax: 62, ray: 28, rhx: 64, rhy: 12, lax: 40, lay: 38, lhx: 34, lhy: 48 })
-      + `<g class="prop snatch-bell">${bell(64, 6, 0.75)}</g>`
-    ),
-    "kb-snatch-test": () => wrap("art-snatch",
-      athlete({ ...stand, rax: 62, ray: 28, rhx: 64, rhy: 12, lax: 42, lay: 40, lhx: 38, lhy: 52 })
-      + `<g class="prop snatch-bell">${bell(64, 6, 0.75)}</g>`
-    ),
-    "kb-high-pull": () => wrap("art-highpull",
-      athlete({ hx: 54, hy: 18, sx: 52, sy: 26, hipx: 52, hipy: 50, lax: 48, lay: 36, lhx: 52, lhy: 24, rax: 50, ray: 36, rhx: 54, rhy: 24 })
-      + `<g class="prop">${bell(54, 20, 0.8)}</g>`
-    ),
-    "kb-row": () => wrap("art-row",
-      athlete({ hx: 68, hy: 24, sx: 62, sy: 32, hipx: 50, hipy: 48, lx2: 36, rx2: 58, lax: 56, lay: 40, lhx: 44, lhy: 36, rax: 54, ray: 44, rhx: 62, rhy: 52 })
-      + `<g class="prop row-bell">${bell(40, 34, 0.8)}</g>`
-    ),
-    "kb-renegade-row": () => wrap("art-plank art-row",
-      `<g class="body">
-        ${head(20, 36)}
-        <path d="M26 38 L72 40" stroke="${INK}" stroke-width="2.2"/>
-        <path d="M32 40 L30 62" stroke="${INK}" stroke-width="1.8"/>
-        <path class="arm-r" d="M60 40 L58 28" stroke="${INK}" stroke-width="1.8"/>
-        <path d="M72 40 L76 62" stroke="${INK}" stroke-width="2"/>
-        <path d="M70 40 L66 62" stroke="${INK}" stroke-width="2"/>
-      </g>${bell(30, 68, 0.7)}${bell(56, 22, 0.7)}`
-    ),
-    "kb-farmer-carry": () => wrap("art-walk",
-      athlete({ ...stand, lax: 36, lay: 44, lhx: 32, lhy: 62, rax: 64, ray: 44, rhx: 68, rhy: 62, lx2: 36, rx2: 66 })
-      + `<g class="prop">${bell(32, 68, 0.75)}${bell(68, 68, 0.75)}</g>`
-    ),
-    "kb-suitcase-carry": () => wrap("art-walk",
-      athlete({ ...stand, lax: 36, lay: 44, lhx: 32, lhy: 62, rax: 62, ray: 38, rhx: 66, rhy: 50 })
-      + `<g class="prop">${bell(32, 68, 0.8)}</g>`
-    ),
-    "kb-rack-carry": () => wrap("art-walk",
-      athlete({ ...stand, lax: 40, lay: 34, lhx: 38, lhy: 26, rax: 62, ray: 40, rhx: 66, rhy: 52 })
-      + `<g class="prop">${bell(36, 22, 0.72)}</g>`
-    ),
-    "kb-oh-carry": () => wrap("art-walk",
-      athlete({ ...stand, rax: 62, ray: 28, rhx: 64, rhy: 12, lax: 40, lay: 40, lhx: 36, lhy: 52 })
-      + `<g class="prop">${bell(64, 6, 0.72)}</g>`
-    ),
-    "kb-thruster": () => wrap("art-squat art-press",
-      athlete({ hx: 50, hy: 22, sx: 50, sy: 30, hipx: 50, hipy: 56, lx1: 40, ly1: 70, lx2: 34, ly2: 86, rx1: 60, ry1: 70, rx2: 66, ry2: 86, lax: 40, lay: 34, lhx: 38, lhy: 22, rax: 60, ray: 34, rhx: 62, rhy: 22 })
-      + `<g class="prop press-bell">${bell(38, 16, 0.7)}${bell(62, 16, 0.7)}</g>`
-    ),
-    "kb-clean-press": () => wrap("art-clean art-press",
-      athlete({ ...stand, lax: 40, lay: 34, lhx: 38, lhy: 16, rax: 60, ray: 38, rhx: 64, rhy: 50 })
-      + `<g class="prop press-bell">${bell(38, 10, 0.72)}</g>`
-    ),
-    "kb-clean-squat": () => wrap("art-clean art-squat",
-      athlete({ hx: 50, hy: 24, sx: 50, sy: 32, hipx: 50, hipy: 56, lx1: 40, ly1: 70, lx2: 34, ly2: 86, rx1: 60, ry1: 70, rx2: 66, ry2: 86, lax: 40, lay: 34, lhx: 38, lhy: 26, rax: 60, ray: 40, rhx: 64, rhy: 52 })
-      + `<g class="prop">${bell(36, 22, 0.72)}</g>`
-    ),
-    "kb-halo": () => wrap("art-halo",
-      athlete({ ...stand, lax: 36, lay: 28, lhx: 42, lhy: 14, rax: 64, ray: 28, rhx: 58, rhy: 14 })
-      + `<g class="prop halo-bell">${bell(50, 8, 0.7)}</g>`
-    ),
-    "kb-around-the-world": () => wrap("art-orbit",
-      athlete({ ...stand })
-      + `<g class="prop orbit-bell">${bell(28, 52, 0.75)}</g>`
-    ),
-    "kb-figure-8": () => wrap("art-figure8",
-      athlete({ hx: 50, hy: 18, sx: 50, sy: 26, hipx: 50, hipy: 48, lx1: 38, ly1: 64, lx2: 32, ly2: 86, rx1: 62, ry1: 64, rx2: 68, ry2: 86, lax: 40, lay: 44, lhx: 44, lhy: 60, rax: 60, ray: 44, rhx: 56, rhy: 60 })
-      + `<g class="prop f8-bell">${bell(50, 68, 0.75)}</g>`
-    ),
+    "kb-swing": () => wrap(person(swingBody) + pendulum("1.35s", 38, -46)),
+    "kb-2h-swing": () => wrap(person(swingBody) + pendulum("1.35s", 38, -46, 27, 1.02)),
+    "kb-1h-swing": () => wrap(person(Object.assign({}, swingBody, { armL: "-12; 8; -12", foreL: "-8; 4; -8" })) + pendulum("1.35s", 36, -44)),
+    "kb-double-swing": () => wrap(person(swingBody) + twoPendulum("1.35s", 36, -44)),
+    "kb-deadlift": () => wrap(person(hingeBody)),
+    "kb-sumo-dl": () => wrap(person(Object.assign({}, hingeBody, { wide: true }))),
+    "kb-single-leg-rdl": () => wrap(person(Object.assign({}, hingeBody, { hold: "l", kickR: true, legR: "-55; -30; -55", shinR: "8; 4; 8", torso: "30; 10; 30" }))),
+    "kb-good-morning": () => wrap(person(Object.assign({}, hingeBody, { hold: "goblet", armL: "-40; -36; -40", armR: "40; 36; 40" }))),
+    "kb-goblet-squat": () => wrap(person(Object.assign({}, squatBody, { hold: "goblet" }))),
+    "kb-front-squat": () => wrap(person(Object.assign({}, squatBody, { hold: "rack" }))),
+    "kb-double-front-squat": () => wrap(person(Object.assign({}, squatBody, { hold: "racks" }))),
+    "kb-rack-squat": () => wrap(person(Object.assign({}, squatBody, { hold: "rack" }))),
+    "kb-lunge": () => wrap(person(lungeBody)),
+    "kb-forward-lunge": () => wrap(person(Object.assign({}, lungeBody, { hold: "l" }))),
+    "kb-walking-lunge": () => wrap(person(Object.assign({}, lungeBody, { hold: "both", dur: "0.85s" }))),
+    "kb-cossack": () => wrap(person({
+      dur: "1.7s", torso: "-10; 8; -10", hips: "-5 6; 5 6; -5 6",
+      armL: "-30; -24; -30", armR: "30; 24; 30",
+      legL: "42; 10; 42", legR: "-6; 28; -6",
+      shinL: "-40; -10; -40", shinR: "10; -8; 10",
+      hold: "goblet", wide: true
+    })),
+    "kb-press": () => wrap(person(pressBody)),
+    "kb-push-press": () => wrap(person(Object.assign({}, pressBody, {
+      dur: "1.25s", hips: "0 5; 0 -2; 0 5",
+      legL: "14; 2; 14", legR: "-14; -2; -14",
+      shinL: "-16; -4; -16", shinR: "16; 4; 16"
+    }))),
+    "kb-double-press": () => wrap(person(Object.assign({}, pressBody, {
+      hold: "both", armL: "40; 168; 40", foreL: "20; -5; 20"
+    }))),
+    "kb-bottoms-up-press": () => wrap(person(pressBody)),
+    "kb-floor-press": () => wrap(`<g transform="translate(50 64)">
+      <path d="M-28 0 L20 0" ${ST}/>
+      <circle cx="-34" cy="0" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <g transform="translate(-8 0)"><g>${rot("70; 10; 70", "1.4s")}<path d="M0 0 L0 -16" ${ST}/>
+        <g transform="translate(0 -16)">${bell(0.7)}</g></g></g>
+      <path d="M20 0 L36 6" ${ST}/><path d="M18 0 L34 12" ${ST}/>
+    </g>`),
+    "kb-tgu": () => wrap(person({
+      dur: "2.6s", torso: "16; -4; 16", hips: "0 4; 0 0; 0 4",
+      armR: "-120; -165; -120", foreR: "8; 0; 8",
+      armL: "20; 8; 20",
+      legL: "26; 6; 26", legR: "-12; 6; -12",
+      hold: "r"
+    })),
+    "kb-windmill": () => wrap(person({
+      dur: "2.1s", torso: "28; 10; 28", hips: "4 2; 0 0; 4 2",
+      armR: "-160; -150; -160", foreR: "0; 0; 0",
+      armL: "28; 12; 28", foreL: "10; 16; 10",
+      legL: "10; 4; 10", legR: "-8; -4; -8",
+      hold: "r"
+    })),
+    "kb-clean": () => wrap(person({
+      dur: "1.25s", torso: "20; -2; 20",
+      armR: "28; -70; 28", foreR: "8; -36; 8",
+      armL: "12; 8; 12",
+      legL: "14; 2; 14", legR: "-14; -2; -14",
+      hold: "none"
+    }) + floatBell(42, 78, 58, 28, "1.25s")),
+    "kb-double-clean": () => wrap(person({
+      dur: "1.25s", torso: "20; -2; 20",
+      armL: "28; -70; 28", armR: "-28; 70; -28",
+      legL: "14; 2; 14", legR: "-14; -2; -14"
+    }) + floatBell(36, 78, 42, 28, "1.25s") + floatBell(58, 78, 58, 28, "1.25s")),
+    "kb-snatch": () => wrap(person({
+      dur: "1.28s", torso: "22; -6; 22",
+      armR: "26; -168; 26", foreR: "6; 4; 6",
+      armL: "10; 6; 10",
+      legL: "16; 0; 16", legR: "-16; 0; -16"
+    }) + `<g transform="translate(50 54)"><g>${rot("36; -78; 36", "1.28s")}<g transform="translate(0 28)">${bell(0.86)}</g></g></g>`),
+    "kb-snatch-test": () => wrap(person({
+      dur: "1.15s", torso: "20; -6; 20",
+      armR: "24; -168; 24", foreR: "6; 4; 6",
+      armL: "10; 8; 10",
+      legL: "14; 0; 14", legR: "-14; 0; -14"
+    }) + `<g transform="translate(50 54)"><g>${rot("34; -78; 34", "1.15s")}<g transform="translate(0 28)">${bell(0.86)}</g></g></g>`),
+    "kb-high-pull": () => wrap(person({
+      dur: "1.2s", torso: "18; -2; 18",
+      armL: "16; -70; 16", armR: "-16; 70; -16",
+      foreL: "8; -20; 8", foreR: "-8; 20; -8",
+      legL: "12; 2; 12", legR: "-12; -2; -12"
+    }) + `<g transform="translate(50 54)"><g>${rot("30; -42; 30", "1.2s")}<g transform="translate(0 24)">${bell(0.84)}</g></g></g>`),
+    "kb-row": () => wrap(person({
+      dur: "1.3s", torso: "32; 24; 32",
+      armL: "10; -42; 10", foreL: "8; -18; 8",
+      armR: "8; 12; 8",
+      hold: "none",
+      legL: "10; 8; 10", legR: "-6; -4; -6"
+    }) + floatBell(34, 60, 44, 40, "1.3s")),
+    "kb-renegade-row": () => wrap(floorPerson("plank") + floatBell(32, 78, 32, 78, "2s") + floatBell(62, 40, 58, 26, "1.3s")),
+    "kb-farmer-carry": () => wrap(person(walkBody)),
+    "kb-suitcase-carry": () => wrap(person(Object.assign({}, walkBody, { hold: "l", torso: "3; 1; 3" }))),
+    "kb-rack-carry": () => wrap(person(Object.assign({}, walkBody, { hold: "rack", armR: "36; 32; 36" }))),
+    "kb-oh-carry": () => wrap(person(Object.assign({}, walkBody, { hold: "r", armR: "-165; -158; -165", foreR: "0; 0; 0" }))),
+    "kb-thruster": () => wrap(person(Object.assign({}, squatBody, {
+      hold: "racks", dur: "1.3s",
+      armL: "-40; 168; -40", armR: "40; -168; 40",
+      foreL: "-16; -4; -16", foreR: "16; 4; 16"
+    }))),
+    "kb-clean-press": () => wrap(person({
+      dur: "1.4s", torso: "16; -2; 16",
+      armR: "24; -168; 24", foreR: "8; 4; 8",
+      legL: "12; 2; 12", legR: "-12; -2; -12"
+    }) + `<g transform="translate(50 54)"><g>${rot("30; -80; 30", "1.4s")}<g transform="translate(0 26)">${bell(0.8)}</g></g></g>`),
+    "kb-clean-squat": () => wrap(person(Object.assign({}, squatBody, { hold: "rack" }))),
+    "kb-halo": () => wrap(person({
+      dur: "2.2s", torso: "2; -2; 2",
+      armL: "-40; -10; -40", armR: "40; 10; 40",
+      foreL: "-20; 10; -20", foreR: "20; -10; 20"
+    }) + `<g transform="translate(50 20)"><g>${rot("0; 180; 360", "2.2s")}<g transform="translate(12 0)">${bell(0.7)}</g></g></g>`),
+    "kb-around-the-world": () => wrap(person({
+      dur: "2.4s", armL: "16; -10; 16", armR: "-16; 10; -16"
+    }) + `<g transform="translate(50 54)"><g>${rot("0; 180; 360", "2.4s")}<g transform="translate(22 0)">${bell(0.76)}</g></g></g>`),
+    "kb-figure-8": () => wrap(person({
+      dur: "1.8s", armL: "18; -8; 18", armR: "-18; 8; -18",
+      legL: "14; 10; 14", legR: "-14; -10; -14"
+    }) + floatBell(38, 72, 62, 72, "1.8s")),
 
-    "bw-pushup": () => wrap("art-pushup", plankFig()),
-    "bw-knee-pushup": () => wrap("art-pushup",
-      `<g class="body push-body">${head(22, 34)}
-        <path d="M28 36 L70 40" stroke="${INK}" stroke-width="2.2" fill="none"/>
-        <path d="M32 38 L30 56" stroke="${INK}" stroke-width="1.8" fill="none"/>
-        <path d="M66 40 L74 56" stroke="${INK}" stroke-width="1.8" fill="none"/>
-        <path d="M54 40 L50 62" stroke="${INK}" stroke-width="2" fill="none"/>
-        <path d="M56 40 L70 62" stroke="${INK}" stroke-width="2" fill="none"/>
-      </g>`
-    ),
-    "bw-decline-pushup": () => wrap("art-pushup",
-      `<g class="body">${head(24, 40)}<path d="M30 42 L74 28" stroke="${INK}" stroke-width="2.2"/><path d="M36 40 L32 62" stroke="${INK}" stroke-width="1.8"/><path d="M70 30 L78 22" stroke="${INK}" stroke-width="2"/></g>
-      <rect x="72" y="18" width="14" height="6" rx="1" fill="none" stroke="${MUTED}"/>`
-    ),
-    "bw-diamond-pushup": () => wrap("art-pushup",
-      plankFig() + `<path d="M48 58 L50 52 L52 58" fill="none" stroke="${KB}" stroke-width="1.4"/>`
-    ),
-    "bw-archer-pushup": () => wrap("art-pushup",
-      `<g class="body">${head(28, 34)}<path d="M34 36 L76 40" stroke="${INK}" stroke-width="2.2"/><path d="M42 38 L40 60" stroke="${INK}" stroke-width="1.8"/><path d="M60 40 L78 52" stroke="${INK}" stroke-width="1.8"/><path d="M74 40 L78 62" stroke="${INK}" stroke-width="2"/></g>`
-    ),
-    "bw-pike-pushup": () => wrap("art-pike",
-      `<g class="body">${head(28, 48)}<path d="M34 46 L50 22 L74 50" stroke="${INK}" stroke-width="2.2" fill="none"/><path d="M38 44 L30 62" stroke="${INK}" stroke-width="1.8"/><path d="M70 48 L78 62" stroke="${INK}" stroke-width="1.8"/></g>`
-    ),
-    "bw-handstand-hold": () => wrap("art-hs",
-      `<g class="body">${head(50, 72)}<path d="M50 64 L50 36" stroke="${INK}" stroke-width="2.2"/><path d="M50 56 L40 70" stroke="${INK}" stroke-width="1.8"/><path d="M50 56 L60 70" stroke="${INK}" stroke-width="1.8"/><path d="M50 36 L46 18" stroke="${INK}" stroke-width="1.8"/><path d="M50 36 L54 18" stroke="${INK}" stroke-width="1.8"/></g>
-      <path d="M78 12 V86" stroke="${MUTED}" stroke-width="1.4" opacity="0.5"/>`
-    ),
-    "bw-dip": () => wrap("art-dip",
-      `<rect x="18" y="48" width="64" height="6" rx="1" fill="none" stroke="${MUTED}"/>
-      <g class="body">${head(50, 22)}<path d="M50 30 L50 46" stroke="${INK}" stroke-width="2"/><path d="M50 36 L28 50" stroke="${INK}" stroke-width="1.8"/><path d="M50 36 L72 50" stroke="${INK}" stroke-width="1.8"/><path d="M50 46 L42 70 L40 86" stroke="${INK}" stroke-width="2" fill="none"/><path d="M50 46 L58 70 L60 86" stroke="${INK}" stroke-width="2" fill="none"/></g>`
-    ),
-    "bw-pullup": () => wrap("art-pull",
-      bar(14) + `<g class="body pull-body">${head(50, 36)}<path d="M50 44 L50 60" stroke="${INK}" stroke-width="2"/><path d="M50 46 L28 16" stroke="${INK}" stroke-width="1.8"/><path d="M50 46 L72 16" stroke="${INK}" stroke-width="1.8"/><path d="M50 60 L42 78" stroke="${INK}" stroke-width="2"/><path d="M50 60 L58 78" stroke="${INK}" stroke-width="2"/></g>`
-    ),
-    "bw-chinup": () => wrap("art-pull",
-      bar(14) + `<g class="body pull-body">${head(50, 34)}<path d="M50 42 L50 58" stroke="${INK}" stroke-width="2"/><path d="M50 44 L32 16" stroke="${INK}" stroke-width="1.8"/><path d="M50 44 L68 16" stroke="${INK}" stroke-width="1.8"/><path d="M50 58 L44 76" stroke="${INK}" stroke-width="2"/><path d="M50 58 L56 76" stroke="${INK}" stroke-width="2"/></g>`
-    ),
-    "bw-inverted-row": () => wrap("art-invrow",
-      `<path d="M20 28 H80" stroke="${MUTED}" stroke-width="2"/>
-      <g class="body">${head(22, 48)}<path d="M28 50 L74 50" stroke="${INK}" stroke-width="2.2"/><path d="M34 50 L32 30" stroke="${INK}" stroke-width="1.8"/><path d="M70 50 L78 70" stroke="${INK}" stroke-width="2"/></g>`
-    ),
-    "bw-scap-hang": () => wrap("art-hang",
-      bar(14) + `<g class="body">${head(50, 48)}<path d="M50 56 L50 72" stroke="${INK}" stroke-width="2"/><path d="M50 54 L28 16" stroke="${INK}" stroke-width="1.8"/><path d="M50 54 L72 16" stroke="${INK}" stroke-width="1.8"/><path d="M50 72 L44 86" stroke="${INK}" stroke-width="2"/><path d="M50 72 L56 86" stroke="${INK}" stroke-width="2"/></g>`
-    ),
-    "bw-squat": () => wrap("art-squat",
-      athlete({ hx: 50, hy: 26, sx: 50, sy: 34, hipx: 50, hipy: 58, lx1: 40, ly1: 70, lx2: 32, ly2: 86, rx1: 60, ry1: 70, rx2: 68, ry2: 86, lax: 38, lay: 44, lhx: 32, lhy: 56, rax: 62, ray: 44, rhx: 68, rhy: 56 })
-    ),
-    "bw-pulse-squat": () => wrap("art-pulse",
-      athlete({ hx: 50, hy: 28, sx: 50, sy: 36, hipx: 50, hipy: 60, lx1: 40, ly1: 72, lx2: 32, ly2: 86, rx1: 60, ry1: 72, rx2: 68, ry2: 86, lax: 38, lay: 46, lhx: 32, lhy: 58, rax: 62, ray: 46, rhx: 68, rhy: 58 })
-    ),
-    "bw-split-squat": () => wrap("art-lunge",
-      athlete({ hx: 48, hy: 20, sx: 48, sy: 28, hipx: 48, hipy: 48, lx1: 40, ly1: 66, lx2: 30, ly2: 86, rx1: 60, ry1: 64, rx2: 72, ry2: 76, lax: 40, lay: 40, lhx: 34, lhy: 52, rax: 56, ray: 40, rhx: 62, rhy: 52 })
-    ),
-    "bw-reverse-lunge": () => wrap("art-lunge",
-      athlete({ hx: 48, hy: 20, sx: 48, sy: 28, hipx: 48, hipy: 48, lx1: 40, ly1: 66, lx2: 30, ly2: 86, rx1: 58, ry1: 64, rx2: 70, ry2: 78, lax: 42, lay: 40, lhx: 36, lhy: 50, rax: 54, ray: 40, rhx: 60, rhy: 50 })
-    ),
-    "bw-walking-lunge": () => wrap("art-walk art-lunge",
-      athlete({ hx: 50, hy: 18, sx: 50, sy: 26, hipx: 50, hipy: 48, lx1: 42, ly1: 64, lx2: 34, ly2: 86, rx1: 62, ry1: 62, rx2: 72, ry2: 78, lax: 38, lay: 38, lhx: 32, lhy: 48, rax: 62, ray: 38, rhx: 70, rhy: 48 })
-    ),
-    "bw-stepup": () => wrap("art-step",
-      `<rect x="58" y="64" width="24" height="22" fill="none" stroke="${MUTED}"/>
-      ${athlete({ hx: 46, hy: 16, sx: 46, sy: 24, hipx: 46, hipy: 46, lx1: 42, ly1: 60, lx2: 40, ly2: 66, rx1: 54, ry1: 62, rx2: 58, ry2: 86, lax: 38, lay: 36, lhx: 32, lhy: 46, rax: 56, ray: 34, rhx: 64, rhy: 42 })}`
-    ),
-    "bw-pistol": () => wrap("art-pistol",
-      athlete({ hx: 46, hy: 22, sx: 46, sy: 30, hipx: 46, hipy: 54, lx1: 40, ly1: 70, lx2: 34, ly2: 86, rx1: 62, ry1: 50, rx2: 78, ry2: 46, lax: 40, lay: 40, lhx: 32, lhy: 48, rax: 56, ray: 38, rhx: 68, rhy: 42 })
-    ),
-    "bw-cossack": () => wrap("art-cossack",
-      athlete({ hx: 40, hy: 28, sx: 40, sy: 36, hipx: 42, hipy: 56, lx1: 34, ly1: 70, lx2: 28, ly2: 86, rx1: 60, ry1: 60, rx2: 80, ry2: 76, lax: 36, lay: 46, lhx: 32, lhy: 56, rax: 50, ray: 44, rhx: 56, rhy: 52 })
-    ),
-    "bw-glute-bridge": () => wrap("art-bridge",
-      `<g class="body">${head(20, 58)}<path class="spine" d="M26 56 L74 48" stroke="${INK}" stroke-width="2.2"/><path d="M70 50 L78 70" stroke="${INK}" stroke-width="2"/><path d="M66 50 L62 70" stroke="${INK}" stroke-width="2"/><path d="M32 56 L24 70" stroke="${INK}" stroke-width="1.6"/></g>`
-    ),
-    "bw-single-bridge": () => wrap("art-bridge",
-      `<g class="body">${head(20, 58)}<path d="M26 56 L72 46" stroke="${INK}" stroke-width="2.2"/><path d="M68 48 L76 70" stroke="${INK}" stroke-width="2"/><path d="M60 48 L78 36" stroke="${INK}" stroke-width="1.8"/><path d="M32 56 L24 70" stroke="${INK}" stroke-width="1.6"/></g>`
-    ),
-    "bw-hip-thrust": () => wrap("art-bridge",
-      `<rect x="14" y="50" width="22" height="8" fill="none" stroke="${MUTED}"/>
-      <g class="body">${head(18, 42)}<path d="M28 48 L74 46" stroke="${INK}" stroke-width="2.2"/><path d="M70 48 L78 70" stroke="${INK}" stroke-width="2"/><path d="M64 48 L60 70" stroke="${INK}" stroke-width="2"/></g>`
-    ),
-    "bw-plank": () => wrap("art-plank", plankFig(false)),
-    "bw-side-plank": () => wrap("art-sideplank",
-      `<g class="body">${head(22, 42)}<path d="M28 44 L78 46" stroke="${INK}" stroke-width="2.2"/><path d="M32 44 L26 62" stroke="${INK}" stroke-width="1.8"/><path d="M76 46 L80 62" stroke="${INK}" stroke-width="2"/><path d="M50 45 L50 30" stroke="${INK}" stroke-width="1.6"/></g>`
-    ),
-    "bw-hollow": () => wrap("art-hollow",
-      `<g class="body">${head(22, 50)}<path d="M28 52 C46 44 60 44 80 52" stroke="${INK}" stroke-width="2.2" fill="none"/><path d="M32 50 L16 42" stroke="${INK}" stroke-width="1.6"/><path d="M76 52 L90 44" stroke="${INK}" stroke-width="1.6"/></g>`
-    ),
-    "bw-dead-bug": () => wrap("art-bug",
-      `<g class="body">${head(28, 36)}<path d="M34 40 L70 42" stroke="${INK}" stroke-width="2"/><path d="M42 42 L30 22" stroke="${INK}" stroke-width="1.6"/><path d="M42 42 L44 62" stroke="${INK}" stroke-width="1.6"/><path d="M62 42 L78 24" stroke="${INK}" stroke-width="1.6"/><path d="M62 42 L70 64" stroke="${INK}" stroke-width="1.6"/></g>`
-    ),
-    "bw-bird-dog": () => wrap("art-birddog",
-      `<g class="body">${head(22, 40)}<path d="M28 42 L70 44" stroke="${INK}" stroke-width="2.2"/><path d="M34 42 L18 32" stroke="${INK}" stroke-width="1.6"/><path d="M36 44 L34 64" stroke="${INK}" stroke-width="1.8"/><path d="M66 44 L68 64" stroke="${INK}" stroke-width="1.8"/><path d="M70 44 L86 36" stroke="${INK}" stroke-width="1.6"/></g>`
-    ),
-    "bw-hanging-knee": () => wrap("art-hang-knee",
-      bar(14) + `<g class="body">${head(50, 36)}<path d="M50 44 L50 58" stroke="${INK}" stroke-width="2"/><path d="M50 46 L28 16" stroke="${INK}" stroke-width="1.8"/><path d="M50 46 L72 16" stroke="${INK}" stroke-width="1.8"/><path d="M50 58 L40 62 L38 74" stroke="${INK}" stroke-width="2" fill="none"/><path d="M50 58 L60 62 L62 74" stroke="${INK}" stroke-width="2" fill="none"/></g>`
-    ),
-    "bw-situp": () => wrap("art-situp",
-      `<g class="body sit-body">${head(36, 30)}<path d="M40 36 L62 58" stroke="${INK}" stroke-width="2.2"/><path d="M62 58 L86 58" stroke="${INK}" stroke-width="2"/><path d="M38 38 L28 24" stroke="${INK}" stroke-width="1.6"/><path d="M42 38 L32 48" stroke="${INK}" stroke-width="1.6"/></g>`
-    ),
-    "bw-leg-raise": () => wrap("art-legraise",
-      `<g class="body">${head(20, 58)}<path d="M26 56 L50 56" stroke="${INK}" stroke-width="2.2"/><path class="legs-up" d="M50 56 L78 34" stroke="${INK}" stroke-width="2"/><path d="M22 56 L14 48" stroke="${INK}" stroke-width="1.5"/></g>`
-    ),
-    "bw-burpee": () => wrap("art-burpee",
-      athlete({ ...stand, lax: 36, lay: 36, lhx: 30, lhy: 22, rax: 64, ray: 36, rhx: 70, rhy: 22 })
-    ),
-    "bw-mountain": () => wrap("art-mountain",
-      `<g class="body">${head(22, 34)}<path d="M28 36 L74 40" stroke="${INK}" stroke-width="2.2"/><path d="M34 38 L30 62" stroke="${INK}" stroke-width="1.8"/><path class="knee" d="M70 40 L50 62" stroke="${INK}" stroke-width="2"/><path d="M72 40 L80 62" stroke="${INK}" stroke-width="2"/></g>`
-    ),
-    "bw-jump-squat": () => wrap("art-jump",
-      athlete({ hx: 50, hy: 14, sx: 50, sy: 22, hipx: 50, hipy: 44, lx1: 42, ly1: 60, lx2: 36, ly2: 74, rx1: 58, ry1: 60, rx2: 64, ry2: 74, lax: 36, lay: 32, lhx: 28, lhy: 24, rax: 64, ray: 32, rhx: 72, rhy: 24 })
-    ),
-    "bw-skater": () => wrap("art-skater",
-      athlete({ hx: 58, hy: 18, sx: 56, sy: 26, hipx: 52, hipy: 46, lx1: 44, ly1: 62, lx2: 30, ly2: 78, rx1: 62, ry1: 60, rx2: 74, ry2: 50, lax: 44, lay: 34, lhx: 32, lhy: 28, rax: 64, ray: 36, rhx: 76, rhy: 42 })
-    ),
-    "bw-high-knees": () => wrap("art-knees",
-      athlete({ hx: 50, hy: 16, sx: 50, sy: 24, hipx: 50, hipy: 46, lx1: 44, ly1: 58, lx2: 42, ly2: 86, rx1: 58, ry1: 52, rx2: 62, ry2: 40, lax: 38, lay: 34, lhx: 32, lhy: 24, rax: 62, ray: 36, rhx: 70, rhy: 46 })
-    ),
-    "bw-jumping-jack": () => wrap("art-jack",
-      athlete({ hx: 50, hy: 16, sx: 50, sy: 24, hipx: 50, hipy: 46, lx1: 38, ly1: 64, lx2: 26, ly2: 82, rx1: 62, ry1: 64, rx2: 74, ry2: 82, lax: 36, lay: 32, lhx: 24, lhy: 18, rax: 64, ray: 32, rhx: 76, rhy: 18 })
-    ),
-    "bw-bear-crawl": () => wrap("art-crawl",
-      `<g class="body">${head(22, 40)}<path d="M28 42 L70 44" stroke="${INK}" stroke-width="2.2"/><path d="M34 42 L28 62" stroke="${INK}" stroke-width="1.8"/><path d="M46 44 L50 62" stroke="${INK}" stroke-width="1.8"/><path d="M62 44 L58 62" stroke="${INK}" stroke-width="1.8"/><path d="M70 44 L76 62" stroke="${INK}" stroke-width="1.8"/></g>`
-    ),
-    "bw-crab-walk": () => wrap("art-crab",
-      `<g class="body">${head(78, 36)}<path d="M72 40 L28 44" stroke="${INK}" stroke-width="2.2"/><path d="M68 42 L74 64" stroke="${INK}" stroke-width="1.8"/><path d="M34 44 L26 64" stroke="${INK}" stroke-width="1.8"/><path d="M60 42 L62 64" stroke="${INK}" stroke-width="1.8"/><path d="M40 44 L42 64" stroke="${INK}" stroke-width="1.8"/></g>`
-    ),
-    "bw-inchworm": () => wrap("art-inch",
-      `<g class="body">${head(24, 36)}<path d="M30 38 C44 36 50 50 74 62" stroke="${INK}" stroke-width="2.2" fill="none"/><path d="M34 38 L28 60" stroke="${INK}" stroke-width="1.8"/><path d="M70 60 L78 62" stroke="${INK}" stroke-width="1.8"/></g>`
-    ),
-    "bw-world-greatest": () => wrap("art-wgs",
-      athlete({ hx: 40, hy: 22, sx: 42, sy: 30, hipx: 44, hipy: 50, lx1: 36, ly1: 66, lx2: 28, ly2: 86, rx1: 60, ry1: 64, rx2: 76, ry2: 78, lax: 34, lay: 44, lhx: 28, lhy: 62, rax: 56, ray: 28, rhx: 66, rhy: 18 })
-    ),
-    "bw-hip-opener": () => wrap("art-hips",
-      `<g class="body">${head(50, 22)}<path d="M50 30 L50 48" stroke="${INK}" stroke-width="2"/><path d="M50 48 L32 56 L24 70" stroke="${INK}" stroke-width="2" fill="none"/><path d="M50 48 L68 56 L76 70" stroke="${INK}" stroke-width="2" fill="none"/><path d="M40 36 L32 44" stroke="${INK}" stroke-width="1.6"/><path d="M60 36 L68 44" stroke="${INK}" stroke-width="1.6"/></g>`
-    ),
-    "bw-cat-cow": () => wrap("art-catcow",
-      `<g class="body catcow">${head(22, 42)}<path class="spine" d="M28 44 C46 36 60 36 76 46" stroke="${INK}" stroke-width="2.2" fill="none"/><path d="M32 44 L26 62" stroke="${INK}" stroke-width="1.8"/><path d="M72 46 L78 62" stroke="${INK}" stroke-width="1.8"/></g>`
-    ),
-    "bw-thoracic-rot": () => wrap("art-book",
-      `<g class="body">${head(50, 28)}<path d="M40 50 L70 52" stroke="${INK}" stroke-width="2"/><path d="M44 50 L36 66" stroke="${INK}" stroke-width="1.8"/><path d="M48 50 L46 36" stroke="${INK}" stroke-width="1.6"/><path class="open-arm" d="M52 50 L62 28" stroke="${INK}" stroke-width="1.6"/></g>`
-    ),
-    "bw-down-dog": () => wrap("art-dog",
-      `<g class="body">${head(26, 50)}<path d="M32 48 L50 24 L76 58" stroke="${INK}" stroke-width="2.2" fill="none"/><path d="M36 46 L28 64" stroke="${INK}" stroke-width="1.8"/><path d="M72 56 L80 64" stroke="${INK}" stroke-width="1.8"/></g>`
-    ),
-    "bw-couch-stretch": () => wrap("art-couch",
-      `<rect x="62" y="18" width="8" height="68" fill="none" stroke="${MUTED}"/>
-      ${athlete({ hx: 40, hy: 22, sx: 40, sy: 30, hipx: 42, hipy: 50, lx1: 36, ly1: 68, lx2: 30, ly2: 86, rx1: 56, ry1: 58, rx2: 64, ry2: 36, lax: 36, lay: 40, lhx: 30, lhy: 50, rax: 50, ray: 38, rhx: 56, rhy: 46 })}`
-    ),
-    "bw-child": () => wrap("art-child",
-      `<g class="body">${head(28, 48)}<path d="M34 50 C48 62 60 66 78 64" stroke="${INK}" stroke-width="2.2" fill="none"/><path d="M70 64 L74 78" stroke="${INK}" stroke-width="1.8"/><path d="M62 66 L58 78" stroke="${INK}" stroke-width="1.8"/><path d="M36 52 L20 48" stroke="${INK}" stroke-width="1.6"/></g>`
-    )
+    "bw-pushup": () => wrap(floorPerson("push")),
+    "bw-knee-pushup": () => wrap(floorPerson("push")),
+    "bw-decline-pushup": () => wrap(floorPerson("push") + `<rect x="70" y="72" width="16" height="7" fill="none" stroke="${MUTED}"/>`),
+    "bw-diamond-pushup": () => wrap(floorPerson("push")),
+    "bw-archer-pushup": () => wrap(floorPerson("push")),
+    "bw-pike-pushup": () => wrap(`<g transform="translate(50 60)">
+      <g>${rot("4; 12; 4", "1.5s")}
+        <path d="M-18 -16 L0 -32 L20 2" ${ST}/>
+        <circle cx="-22" cy="-12" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+        <path d="M-18 -16 L-24 14" ${ST}/>
+        <path d="M20 2 L26 22" ${ST}/>
+      </g></g>`),
+    "bw-handstand-hold": () => wrap(`<path d="M80 14 V88" stroke="${MUTED}" stroke-width="1.3" opacity="0.45"/>
+      <g transform="translate(50 78)"><g>${rot("-4; 4; -4", "2.3s")}
+        <path d="M-8 0 L0 -18 L8 0" ${ST}/>
+        <path d="M0 -18 L0 -42" ${ST}/>
+        <circle cx="0" cy="-50" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+        <path d="M0 -42 L-5 -58" ${ST}/>
+        <path d="M0 -42 L5 -58" ${ST}/>
+      </g></g>`),
+    "bw-dip": () => wrap(`<rect x="18" y="50" width="64" height="5" fill="none" stroke="${MUTED}"/>` + person({
+      dur: "1.4s", hips: "0 6; 0 0; 0 6",
+      armL: "28; 8; 28", armR: "-28; -8; -28",
+      torso: "2; 0; 2"
+    })),
+    "bw-pullup": () => wrap(hangPerson(true)),
+    "bw-chinup": () => wrap(hangPerson(true)),
+    "bw-inverted-row": () => wrap(`<path d="M18 28 H82" stroke="${MUTED}" stroke-width="2"/>
+      <g transform="translate(50 50)"><g>${slide("0 5; 0 -2; 0 5", "1.35s")}
+        <path d="M-24 2 L22 0" ${ST}/>
+        <circle cx="-32" cy="3" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+        <path d="M-16 2 L-16 -16" ${ST}/>
+        <path d="M8 0 L10 -14" ${ST}/>
+        <path d="M22 0 L32 18" ${ST}/>
+      </g></g>`),
+    "bw-scap-hang": () => wrap(hangPerson(false)),
+    "bw-squat": () => wrap(person(Object.assign({}, squatBody, { hold: "none", armL: "16; 12; 16", armR: "-16; -12; -16" }))),
+    "bw-pulse-squat": () => wrap(person(Object.assign({}, squatBody, { dur: "0.7s", hold: "none", armL: "14; 10; 14", armR: "-14; -10; -14" }))),
+    "bw-split-squat": () => wrap(person(Object.assign({}, lungeBody, { hold: "none", armL: "16; 12; 16", armR: "-16; -12; -16" }))),
+    "bw-reverse-lunge": () => wrap(person(Object.assign({}, lungeBody, { hold: "none", armL: "16; 12; 16", armR: "-16; -12; -16" }))),
+    "bw-walking-lunge": () => wrap(person(Object.assign({}, lungeBody, { hold: "none", dur: "0.8s", armL: "18; -12; 18", armR: "-18; 12; -18" }))),
+    "bw-stepup": () => wrap(`<rect x="60" y="68" width="22" height="20" fill="none" stroke="${MUTED}"/>` + person({
+      dur: "1.4s", hips: "0 3; 0 -4; 0 3",
+      legR: "-8; -26; -8", legL: "8; 4; 8",
+      armL: "14; -10; 14", armR: "-14; 10; -14"
+    })),
+    "bw-pistol": () => wrap(person(Object.assign({}, squatBody, {
+      hold: "none", kickR: true, dur: "1.7s",
+      armL: "-20; -12; -20", armR: "20; 12; 20",
+      legR: "-48; -28; -48"
+    }))),
+    "bw-cossack": () => wrap(person({
+      dur: "1.7s", torso: "-8; 8; -8", hips: "-4 6; 4 6; -4 6",
+      armL: "16; 10; 16", armR: "-16; -10; -16",
+      legL: "40; 10; 40", legR: "-4; 26; -4",
+      shinL: "-38; -10; -38", wide: true
+    })),
+    "bw-glute-bridge": () => wrap(`<g transform="translate(50 72)"><g>${rot("10; -8; 10", "1.55s")}
+      <path d="M-26 6 L20 -8" ${ST}/>
+      <circle cx="-32" cy="8" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M20 -8 L26 16" ${ST}/>
+      <path d="M16 -6 L12 16" ${ST}/>
+    </g></g>`),
+    "bw-single-bridge": () => wrap(`<g transform="translate(50 72)"><g>${rot("10; -8; 10", "1.55s")}
+      <path d="M-26 6 L20 -8" ${ST}/>
+      <circle cx="-32" cy="8" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M20 -8 L26 16" ${ST}/>
+      <path d="M14 -6 L28 -18" ${ST}/>
+    </g></g>`),
+    "bw-hip-thrust": () => wrap(`<rect x="14" y="54" width="20" height="6" fill="none" stroke="${MUTED}"/>
+      <g transform="translate(50 66)"><g>${rot("6; -8; 6", "1.55s")}
+        <path d="M-22 0 L20 -4" ${ST}/>
+        <circle cx="-28" cy="0" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+        <path d="M20 -4 L26 16" ${ST}/>
+      </g></g>`),
+    "bw-plank": () => wrap(floorPerson("plank")),
+    "bw-side-plank": () => wrap(`<g transform="translate(50 60)"><g>${rot("-3; 3; -3", "2.2s")}
+      <path d="M-28 0 L24 2" ${ST}/>
+      <circle cx="-34" cy="-2" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M-22 0 L-26 16" ${ST}/>
+      <path d="M0 1 L0 -14" ${ST}/>
+      <path d="M24 2 L30 16" ${ST}/>
+    </g></g>`),
+    "bw-hollow": () => wrap(`<g transform="translate(50 62)"><g>${rot("-8; 8; -8", "2s")}
+      <path d="M-24 0 C-4 -8 8 -8 28 0" ${ST}/>
+      <circle cx="-30" cy="0" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+    </g></g>`),
+    "bw-dead-bug": () => wrap(`<g transform="translate(50 62)">
+      <path d="M-18 0 L16 0" ${ST}/>
+      <circle cx="-24" cy="0" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <g transform="translate(-8 0)"><g>${rot("-24; 20; -24", "1.55s")}<path d="M0 0 L-12 -12" ${ST}/></g></g>
+      <g transform="translate(6 0)"><g>${rot("20; -24; 20", "1.55s")}<path d="M0 0 L12 -12" ${ST}/></g></g>
+      <g transform="translate(16 0)"><g>${rot("16; -30; 16", "1.55s")}<path d="M0 0 L16 6" ${ST}/></g></g>
+    </g>`),
+    "bw-bird-dog": () => wrap(`<g transform="translate(50 58)">
+      <path d="M-20 0 L20 0" ${ST}/>
+      <circle cx="-28" cy="-2" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <g transform="translate(-14 0)"><g>${rot("6; -12; 6", "2s")}<path d="M0 0 L-16 -8" ${ST}/></g></g>
+      <path d="M-10 0 L-8 16" ${ST}/>
+      <path d="M12 0 L14 16" ${ST}/>
+      <g transform="translate(18 0)"><g>${rot("6; -12; 6", "2s")}<path d="M0 0 L16 -8" ${ST}/></g></g>
+    </g>`),
+    "bw-hanging-knee": () => wrap(`<path d="M22 13 H78" stroke="${MUTED}" stroke-width="2.2" stroke-linecap="round"/>
+      <g transform="translate(50 14)">
+        <path d="M-16 0 L0 20 L16 0" ${ST}/>
+        <path d="M0 20 L0 32" ${ST}/>
+        <circle cx="0" cy="12" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+        <g transform="translate(0 32)"><g>${rot("10; -42; 10", "1.45s")}
+          <path d="M-6 0 L-4 12" ${ST}/>
+          <path d="M6 0 L4 12" ${ST}/>
+        </g></g>
+      </g>`),
+    "bw-situp": () => wrap(`<g transform="translate(50 66)"><g>${rot("22; -6; 22", "1.55s")}
+      <path d="M-8 -16 L16 4 L36 4" ${ST}/>
+      <circle cx="-12" cy="-22" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+    </g></g>`),
+    "bw-leg-raise": () => wrap(`<g transform="translate(50 68)">
+      <path d="M-26 0 L8 0" ${ST}/>
+      <circle cx="-32" cy="0" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <g transform="translate(8 0)"><g>${rot("8; -55; 8", "1.45s")}<path d="M0 0 L26 0" ${ST}/></g></g>
+    </g>`),
+    "bw-burpee": () => wrap(person({
+      dur: "0.95s", hips: "0 7; 0 -6; 0 7",
+      torso: "8; 2; 8",
+      armL: "16; -80; 16", armR: "-16; 80; -16",
+      legL: "30; 4; 30", legR: "-30; -4; -30",
+      shinL: "-36; -6; -36", shinR: "36; 6; 36"
+    })),
+    "bw-mountain": () => wrap(floorPerson("mountain")),
+    "bw-jump-squat": () => wrap(person({
+      dur: "0.9s", hips: "0 8; 0 -10; 0 8",
+      armL: "16; -80; 16", armR: "-16; 80; -16",
+      legL: "28; -4; 28", legR: "-28; 4; -28",
+      shinL: "-32; 4; -32", shinR: "32; -4; 32"
+    })),
+    "bw-skater": () => wrap(person({
+      dur: "0.9s", torso: "-8; 8; -8", hips: "-6 2; 6 2; -6 2",
+      armL: "-40; 20; -40", armR: "20; -40; 20",
+      legL: "18; -8; 18", legR: "-22; 16; -22"
+    })),
+    "bw-high-knees": () => wrap(person({
+      dur: "0.45s",
+      armL: "-28; 22; -28", armR: "22; -28; 22",
+      legL: "8; -48; 8", legR: "-48; 8; -48",
+      shinL: "-8; -10; -8", shinR: "-10; -8; -10"
+    })),
+    "bw-jumping-jack": () => wrap(person({
+      dur: "0.7s",
+      armL: "10; -120; 10", armR: "-10; 120; -10",
+      legL: "6; 24; 6", legR: "-6; -24; -6"
+    })),
+    "bw-bear-crawl": () => wrap(floorPerson("mountain")),
+    "bw-crab-walk": () => wrap(`<g transform="translate(50 58)"><g>${slide("-3 0; 4 0; -3 0", "0.85s")}
+      <path d="M20 -4 L-20 2" ${ST}/>
+      <circle cx="26" cy="-8" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M16 -2 L20 16" ${ST}/>
+      <path d="M-16 2 L-20 16" ${ST}/>
+      <path d="M8 0 L10 16" ${ST}/>
+      <path d="M-8 2 L-6 16" ${ST}/>
+    </g></g>`),
+    "bw-inchworm": () => wrap(`<g transform="translate(50 62)"><g>${slide("0 0; 4 0; 0 0", "2s")}
+      <path d="M-22 -6 C-4 -18 10 4 24 10" ${ST}/>
+      <circle cx="-28" cy="-8" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M-20 -6 L-24 16" ${ST}/>
+      <path d="M24 10 L30 16" ${ST}/>
+    </g></g>`),
+    "bw-world-greatest": () => wrap(person({
+      dur: "2.1s", torso: "8; -8; 8",
+      armR: "-20; -120; -20", armL: "16; 10; 16",
+      legL: "26; 10; 26", legR: "-20; -8; -20"
+    })),
+    "bw-hip-opener": () => wrap(person({
+      dur: "2s", wide: true, torso: "4; -4; 4",
+      legL: "22; -8; 22", legR: "-8; 22; -8",
+      armL: "14; 10; 14", armR: "-14; -10; -14"
+    })),
+    "bw-cat-cow": () => wrap(`<g transform="translate(50 58)"><g>${rot("-8; 8; -8", "2s")}
+      <path d="M-22 0 C-4 -12 8 -12 24 2" ${ST}/>
+      <circle cx="-28" cy="-2" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M-16 0 L-20 16" ${ST}/>
+      <path d="M18 1 L24 16" ${ST}/>
+    </g></g>`),
+    "bw-thoracic-rot": () => wrap(`<g transform="translate(50 62)">
+      <path d="M-16 4 L20 4" ${ST}/>
+      <circle cx="-2" cy="-14" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M-8 4 L-6 16" ${ST}/>
+      <g transform="translate(4 4)"><g>${rot("0; -70; 0", "2s")}<path d="M0 0 L16 -10" ${ST}/></g></g>
+    </g>`),
+    "bw-down-dog": () => wrap(`<g transform="translate(50 62)"><g>${rot("-2; 4; -2", "2.3s")}
+      <path d="M-18 -6 L0 -28 L22 6" ${ST}/>
+      <circle cx="-24" cy="-4" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M-18 -6 L-24 16" ${ST}/>
+      <path d="M22 6 L28 18" ${ST}/>
+    </g></g>`),
+    "bw-couch-stretch": () => wrap(`<rect x="66" y="16" width="7" height="72" fill="none" stroke="${MUTED}"/>` + person({
+      dur: "2.4s", torso: "4; 2; 4",
+      legR: "-8; -14; -8", shinR: "-40; -48; -40",
+      armL: "12; 10; 12", armR: "-12; -10; -12"
+    })),
+    "bw-child": () => wrap(`<g transform="translate(50 70)"><g>${slide("0 0; 0 -2; 0 0", "3s")}
+      <path d="M-18 -6 C-2 8 12 10 26 4" ${ST}/>
+      <circle cx="-24" cy="-8" r="5.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+    </g></g>`)
   };
-
-  function plankFig() {
-    return `<g class="body push-body">${head(20, 36)}<path d="M26 38 L74 40" stroke="${INK}" stroke-width="2.2"/><path d="M32 38 L28 62" stroke="${INK}" stroke-width="1.8"/><path d="M44 40 L42 62" stroke="${INK}" stroke-width="1.6"/><path d="M72 40 L78 62" stroke="${INK}" stroke-width="2"/><path d="M68 40 L64 62" stroke="${INK}" stroke-width="2"/></g>`;
-  }
-
-  function fallback() {
-    return wrap("art-idle", athlete(stand));
-  }
 
   window.BellworkArt = {
     svg(id) {
-      const fn = poses[id];
-      return fn ? fn() : fallback();
+      return (poses[id] || poses["bw-squat"])();
     }
   };
 })();

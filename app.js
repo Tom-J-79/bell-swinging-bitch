@@ -106,7 +106,8 @@
   }
 
   function art(id) {
-    return (window.BellworkArt && id) ? window.BellworkArt.svg(id) : "";
+    if (!id) return "";
+    return `<img class="ex-svg" alt="" src="art/${id}.gif">`;
   }
 
   function estimateMinutes(r) {
