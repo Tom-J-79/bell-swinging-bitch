@@ -242,7 +242,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--copper); }
   background: var(--bg-2);
   overflow: hidden;
 }
-.ex-thumb .ex-svg { width: 52px; height: 52px; display: block; }
+.ex-thumb .ex-svg { width: 52px; height: 52px; display: block; object-fit: contain; }
 .ex-row .name { font-size: 13px; min-width: 0; }
 .ex-row .name small { display: block; color: var(--faint); font-size: 11px; }
 .ex-row input { padding: 7px 8px; width: 100%; }
@@ -296,7 +296,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--copper); }
   place-items: center;
   overflow: hidden;
 }
-.ex-art .ex-svg { width: 148px; height: 148px; }
+.ex-art .ex-svg { width: 148px; height: 148px; object-fit: contain; }
 .ex-card h4 { margin: 0; font-size: 16px; font-weight: 600; }
 .ex-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; flex: 1; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -404,7 +404,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--copper); }
   display: grid;
   place-items: center;
 }
-.play-art .ex-svg { width: 210px; height: 210px; }
+.play-art .ex-svg { width: 210px; height: 210px; object-fit: contain; }
 .now-ex { font-size: 28px; margin: 10px 0 4px; }
 .next-ex { color: var(--muted); margin-bottom: 22px; }
 .player-controls { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
@@ -435,223 +435,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--copper); }
   .ex-row .qty { display: none; }
 }
 
-/* Motion figures */
-.ex-svg { overflow: visible; }
-.art-swing .swing-bell { animation: swingBell 1.35s ease-in-out infinite; transform-origin: 50px 48px; }
-.art-swing .body { animation: hingePulse 1.35s ease-in-out infinite; transform-origin: 50px 86px; }
-.art-hinge .body { animation: hingePulse 1.8s ease-in-out infinite; transform-origin: 50px 86px; }
-.art-rdl .body { animation: teeter 2s ease-in-out infinite; transform-origin: 42px 86px; }
-.art-squat .body, .art-squat .prop { animation: squatBounce 1.5s ease-in-out infinite; transform-origin: 50px 86px; }
-.art-pulse .body { animation: squatBounce 0.7s ease-in-out infinite; transform-origin: 50px 86px; }
-.art-lunge .body { animation: lungeShift 1.6s ease-in-out infinite; transform-origin: 48px 86px; }
-.art-cossack .body { animation: sway 1.8s ease-in-out infinite; transform-origin: 50px 86px; }
-.art-press .press-bell { animation: pressUp 1.4s ease-in-out infinite; }
-.art-pushpress .body { animation: dip 1.2s ease-in-out infinite; transform-origin: 50px 86px; }
-.art-pushpress .press-bell { animation: pressUp 1.2s ease-in-out infinite; }
-.art-clean .clean-bell { animation: zipUp 1.3s ease-in-out infinite; }
-.art-snatch .snatch-bell { animation: snatchArc 1.25s ease-in-out infinite; transform-origin: 50px 70px; }
-.art-highpull .prop { animation: highPull 1.2s ease-in-out infinite; }
-.art-row .row-bell { animation: rowPull 1.2s ease-in-out infinite; }
-.art-walk .body { animation: walkBob 0.7s ease-in-out infinite; }
-.art-halo .halo-bell { animation: haloSpin 2.2s linear infinite; transform-origin: 50px 22px; }
-.art-orbit .orbit-bell { animation: orbit 2.4s linear infinite; transform-origin: 50px 50px; }
-.art-figure8 .f8-bell { animation: figure8 1.8s ease-in-out infinite; }
-.art-tgu .body { animation: rise 3s ease-in-out infinite; transform-origin: 40px 86px; }
-.art-windmill .body { animation: windmillLean 2.2s ease-in-out infinite; transform-origin: 50px 86px; }
-.art-pushup .push-body { animation: push 1.35s ease-in-out infinite; transform-origin: 20px 62px; }
-.art-plank .body { animation: tinyPulse 2s ease-in-out infinite; }
-.art-pike .body { animation: pikeNod 1.6s ease-in-out infinite; transform-origin: 50px 24px; }
-.art-hs .body { animation: balance 2.4s ease-in-out infinite; transform-origin: 50px 72px; }
-.art-pull .pull-body { animation: chin 1.6s ease-in-out infinite; }
-.art-hang .body { animation: hangSway 2.4s ease-in-out infinite; transform-origin: 50px 14px; }
-.art-hang-knee .body { animation: hangSway 2s ease-in-out infinite; transform-origin: 50px 14px; }
-.art-bridge .body { animation: bridgeUp 1.6s ease-in-out infinite; transform-origin: 20px 70px; }
-.art-hollow .body { animation: hollowRock 2s ease-in-out infinite; transform-origin: 50px 56px; }
-.art-bug .body { animation: bugSwitch 1.6s ease-in-out infinite; }
-.art-birddog .body { animation: teeter 2s ease-in-out infinite; transform-origin: 50px 44px; }
-.art-situp .sit-body { animation: sit 1.6s ease-in-out infinite; transform-origin: 70px 58px; }
-.art-legraise .legs-up { animation: raise 1.5s ease-in-out infinite; transform-origin: 50px 56px; }
-.art-burpee .body { animation: squatBounce 0.9s ease-in-out infinite; transform-origin: 50px 86px; }
-.art-mountain .knee { animation: climb 0.55s ease-in-out infinite; transform-origin: 70px 40px; }
-.art-jump .body { animation: jump 0.9s ease-in-out infinite; }
-.art-skater .body { animation: skate 0.9s ease-in-out infinite; transform-origin: 50px 78px; }
-.art-knees .body { animation: walkBob 0.45s ease-in-out infinite; }
-.art-jack .body { animation: jack 0.7s ease-in-out infinite; transform-origin: 50px 46px; }
-.art-crawl .body { animation: crawl 0.8s ease-in-out infinite; }
-.art-crab .body { animation: crawl 0.9s ease-in-out infinite; }
-.art-inch .body { animation: inch 2s ease-in-out infinite; }
-.art-catcow .spine { animation: spineWave 2s ease-in-out infinite; }
-.art-book .open-arm { animation: openBook 2s ease-in-out infinite; transform-origin: 52px 50px; }
-.art-pistol .body { animation: squatBounce 1.8s ease-in-out infinite; transform-origin: 34px 86px; }
-.art-step .body { animation: stepUp 1.5s ease-in-out infinite; }
-.art-floor .body { animation: tinyPulse 1.6s ease-in-out infinite; }
-.art-dip .body { animation: dip 1.5s ease-in-out infinite; }
-.art-invrow .body { animation: rowPull 1.4s ease-in-out infinite; }
-.art-sideplank .body { animation: tinyPulse 2s ease-in-out infinite; }
-.art-wgs .body { animation: teeter 2.2s ease-in-out infinite; transform-origin: 28px 86px; }
-.art-hips .body { animation: sway 2s ease-in-out infinite; }
-.art-dog .body { animation: tinyPulse 2.4s ease-in-out infinite; }
-.art-couch .body { animation: tinyPulse 2.6s ease-in-out infinite; }
-.art-child .body { animation: tinyPulse 3s ease-in-out infinite; }
-
-@keyframes swingBell {
-  0%, 100% { transform: rotate(28deg) translate(4px, 8px); }
-  50% { transform: rotate(-55deg) translate(-6px, -28px); }
-}
-@keyframes hingePulse {
-  0%, 100% { transform: rotate(12deg); }
-  50% { transform: rotate(-6deg); }
-}
-@keyframes squatBounce {
-  0%, 100% { transform: translateY(0) scaleY(1); }
-  50% { transform: translateY(6px) scaleY(0.92); }
-}
-@keyframes lungeShift {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(-3px) translateY(2px); }
-}
-@keyframes sway {
-  0%, 100% { transform: rotate(-6deg); }
-  50% { transform: rotate(8deg); }
-}
-@keyframes pressUp {
-  0%, 100% { transform: translateY(10px); }
-  50% { transform: translateY(-6px); }
-}
-@keyframes dip {
-  0%, 100% { transform: translateY(0); }
-  40% { transform: translateY(5px); }
-  70% { transform: translateY(-4px); }
-}
-@keyframes zipUp {
-  0% { transform: translate(8px, 28px); }
-  55% { transform: translate(0, 0); }
-  100% { transform: translate(8px, 28px); }
-}
-@keyframes snatchArc {
-  0% { transform: rotate(30deg) translate(0, 20px); }
-  50% { transform: rotate(-10deg) translate(0, -8px); }
-  100% { transform: rotate(30deg) translate(0, 20px); }
-}
-@keyframes highPull {
-  0%, 100% { transform: translate(0, 14px); }
-  50% { transform: translate(2px, -8px); }
-}
-@keyframes rowPull {
-  0%, 100% { transform: translate(6px, 4px); }
-  50% { transform: translate(-4px, -4px); }
-}
-@keyframes walkBob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-@keyframes haloSpin {
-  from { transform: rotate(0deg) translateX(10px); }
-  to { transform: rotate(360deg) translateX(10px); }
-}
-@keyframes orbit {
-  from { transform: rotate(0deg) translateX(22px); }
-  to { transform: rotate(360deg) translateX(22px); }
-}
-@keyframes figure8 {
-  0%, 100% { transform: translate(-10px, 0); }
-  25% { transform: translate(0, 8px); }
-  50% { transform: translate(10px, 0); }
-  75% { transform: translate(0, -6px); }
-}
-@keyframes rise {
-  0%, 100% { transform: rotate(8deg) translateY(4px); }
-  50% { transform: rotate(0) translateY(-4px); }
-}
-@keyframes windmillLean {
-  0%, 100% { transform: rotate(10deg); }
-  50% { transform: rotate(-2deg); }
-}
-@keyframes push {
-  0%, 100% { transform: rotate(0); }
-  50% { transform: rotate(8deg) translateY(4px); }
-}
-@keyframes tinyPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03); }
-}
-@keyframes pikeNod {
-  0%, 100% { transform: rotate(0); }
-  50% { transform: rotate(6deg); }
-}
-@keyframes balance {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
-}
-@keyframes chin {
-  0%, 100% { transform: translateY(8px); }
-  50% { transform: translateY(-4px); }
-}
-@keyframes hangSway {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
-}
-@keyframes bridgeUp {
-  0%, 100% { transform: rotate(4deg); }
-  50% { transform: rotate(-6deg); }
-}
-@keyframes hollowRock {
-  0%, 100% { transform: rotate(-6deg); }
-  50% { transform: rotate(6deg); }
-}
-@keyframes bugSwitch {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
-}
-@keyframes teeter {
-  0%, 100% { transform: rotate(-5deg); }
-  50% { transform: rotate(4deg); }
-}
-@keyframes sit {
-  0%, 100% { transform: rotate(18deg); }
-  50% { transform: rotate(0); }
-}
-@keyframes raise {
-  0%, 100% { transform: rotate(10deg); }
-  50% { transform: rotate(-18deg); }
-}
-@keyframes climb {
-  0%, 100% { transform: rotate(0); }
-  50% { transform: rotate(-28deg); }
-}
-@keyframes jump {
-  0%, 100% { transform: translateY(8px); }
-  50% { transform: translateY(-10px); }
-}
-@keyframes skate {
-  0%, 100% { transform: translateX(-6px); }
-  50% { transform: translateX(6px); }
-}
-@keyframes jack {
-  0%, 100% { transform: scaleX(0.86); }
-  50% { transform: scaleX(1.08); }
-}
-@keyframes crawl {
-  0%, 100% { transform: translateX(-3px); }
-  50% { transform: translateX(4px); }
-}
-@keyframes inch {
-  0%, 100% { transform: scaleX(1); }
-  50% { transform: scaleX(1.08) translateX(3px); }
-}
-@keyframes spineWave {
-  0%, 100% { d: path("M28 44 C46 36 60 36 76 46"); }
-  50% { d: path("M28 44 C46 54 60 54 76 46"); }
-}
-@keyframes openBook {
-  0%, 100% { transform: rotate(0); }
-  50% { transform: rotate(-50deg); }
-}
-@keyframes stepUp {
-  0%, 100% { transform: translateY(4px); }
-  50% { transform: translateY(-4px); }
-}
-
+.ex-svg { overflow: visible; display: block; object-fit: contain; }
 @media (prefers-reduced-motion: reduce) {
-  .ex-svg * { animation: none !important; }
+  .ex-svg animateTransform { display: none; }
 }
